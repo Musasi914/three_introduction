@@ -24,6 +24,10 @@ const light = new THREE.PointLight(0xffffff, 6000);
 light.position.set(0, 0, 0);
 scene.add(light);
 
+const light2 = new THREE.DirectionalLight(0xffffff);
+light2.position.set(1, 1, 1);
+scene.add(light2);
+
 // // ポイント光源
 // const pointLight = new THREE.PointLight(0xffffff, 2, 100);
 // scene.add(pointLight);
@@ -46,3 +50,14 @@ if (WebGL.isWebGL2Available()) {
   const warning = WebGL.getWebGL2ErrorMessage();
   document.body.appendChild(warning);
 }
+
+window.addEventListener("resize", () => {
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(width, height);
+
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+});

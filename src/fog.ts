@@ -10,33 +10,36 @@ document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
 
-const camera = new THREE.PerspectiveCamera(70, WIDTH / HEIGHT, 1, 9999);
+const camera = new THREE.PerspectiveCamera(45, WIDTH / HEIGHT);
 camera.position.set(0, 0, 1000);
 
+// フォグ
+scene.fog = new THREE.Fog(0x000000, 50, 2000);
+
 // 光源
+scene.add(new THREE.DirectionalLight(0xff0000, 2)); // 平行光源
+scene.add(new THREE.AmbientLight(0x00ffff)); // 環境光源
 
-// マス目
-{
-  const geometry = new THREE.BoxGeometry(45, 45, 45);
-  const material = new THREE.MeshStandardMaterial({
-    color: 0x22dd22,
-    roughness: 0.1,
-    metalness: 0.2,
-  });
+// グループ
+const group = new THREE.Group();
+scene.add(group);
+const geometry = new THREE.BoxGeometry(50, 50, 50);
+const material = new THREE.MeshStandardMaterial();
 
-  for (let i = 0; i < 60; i++) {
-    const box = new THREE.Mesh(geometry, material);
-    box.position.x = Math.round((Math.random() - 0.5) * 19) * 50 + 25;
-    box.position.y = 20;
-    box.position.z = Math.round((Math.random() - 0.5) * 19) * 50 + 25;
-    box.receiveShadow = true;
-    box.castShadow = true;
-    scene.add(box);
-  }
+for (let i = 0; i < 1000; i++) {
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.x = (Math.random() - 0.5) * 2000;
+  mesh.position.y = (Math.random() - 0.5) * 2000;
+  mesh.position.z = (Math.random() - 0.5) * 2000;
+  mesh.rotation.x = Math.random() * Math.PI * 2;
+  mesh.rotation.y = Math.random() * Math.PI * 2;
+  mesh.rotation.z = Math.random() * Math.PI * 2;
+  group.add(mesh);
 }
 
 // レンダー
 function animate() {
+  group.rotateY(0.01);
   camera.lookAt(0, 0, 0);
 
   // controls.update();
