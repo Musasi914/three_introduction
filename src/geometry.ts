@@ -1,5 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { BufferGeometryUtils, ThreeMFLoader } from "three/examples/jsm/Addons.js";
+import Stats from "three/examples/jsm/libs/stats.module.js";
 
 const WIDTH = window.innerWidth;
 const HEIGHT = window.innerHeight;
@@ -31,7 +33,7 @@ const geometryList = [
   new THREE.SphereGeometry(50), // 球体
   new THREE.BoxGeometry(100, 100, 100), // 直方体
   new THREE.PlaneGeometry(100, 100), // 平面
-  new THREE.TetrahedronGeometry(100, 0), // 三角錐
+  // new THREE.TetrahedronGeometry(100, 0), // 三角錐
   new THREE.ConeGeometry(100, 100, 32), // 円錐
   new THREE.CylinderGeometry(50, 50, 100, 32), // 円柱
   new THREE.TorusGeometry(50, 30, 16, 100), // ドーナツ形状
@@ -46,32 +48,41 @@ scene.add(directionalLight);
 const ambientLight = new THREE.AmbientLight(0x999999);
 scene.add(ambientLight);
 
-// 画像
-// const loader = new THREE.TextureLoader();
-// const texture = loader.load("/Environment_baseColor.png");
-// texture.colorSpace = THREE.SRGBColorSpace;
-// const material = new THREE.MeshStandardMaterial({ color: 0xff0000});
+scene.add(new THREE.GridHelper(600));
+scene.add(new THREE.AxesHelper(300));
 
-// mesh 登録
-// const mesh = new THREE.Mesh(geometry, material);
-// scene.add(mesh);
+const boxes: THREE.BufferGeometry<THREE.NormalBufferAttributes>[] = [];
 
 geometryList.map((geometry, i) => {
-  const mesh = new THREE.Mesh(geometry, material);
-
-  container.add(mesh);
-
-  mesh.position.x = 400 * Math.cos((i / geometryList.length) * Math.PI * 2);
-  mesh.position.z = 400 * Math.sin((i / geometryList.length) * Math.PI * 2);
+  const geometryTranslated = geometry.translate(
+    400 * Math.cos((i / geometryList.length) * Math.PI * 2),
+    0,
+    400 * Math.sin((i / geometryList.length) * Math.PI * 2)
+  );
+  boxes.push(geometryTranslated);
 });
+
+const geometry = BufferGeometryUtils.mergeGeometries(boxes);
+scene.add(new THREE.Mesh(geometry, material));
+
+const stats: Stats = new Stats();
+stats.dom.style.position = "absolute";
+stats.dom.style.top = "0px";
+document.body.appendChild(stats.dom);
 
 // カメラ
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.update();
 
+const info: HTMLElement | null = document.getElementById("info");
+
 function animate() {
-  // mesh.rotation.y += 0.01;
+  // レンダリング情報を画面に表示
+  if (!info) throw new Error("infoがみつからん");
+  info.innerHTML = JSON.stringify(renderer.info.render, null, "    ");
+
   controls.update();
+  stats.update();
 
   renderer.render(scene, camera);
 }
