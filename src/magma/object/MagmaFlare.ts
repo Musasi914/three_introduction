@@ -5,6 +5,7 @@ import FlareEmitter from "./FlareEmitter.js";
 import InGrow from "./InGrow.js";
 import SparkEmitter from "./SparkEmitter.js";
 import { OutGlow } from "../OutGlow.js";
+import GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
 
 export default class MagmaFlare extends THREE.Group {
   magma;
@@ -35,9 +36,32 @@ export default class MagmaFlare extends THREE.Group {
     this.sparkEmitter = new SparkEmitter();
     this.add(this.sparkEmitter);
 
-    //
+    // アウトグロー
     const outGlow = new OutGlow();
     this.add(outGlow);
+
+    const layers = {
+      Magma: true,
+      Aura: true,
+      Flare: true,
+      Spark: true,
+      "Glow Inside": true,
+      "Glow Outside": true,
+    };
+
+    const gui = new GUI();
+    Object.keys(layers).forEach((key) => {
+      gui.add(layers, key as keyof typeof layers);
+    });
+    gui.onChange((event) => {
+      this.magma.visible = layers["Magma"];
+      this.aura.visible = layers["Aura"];
+      this.flare.visible = layers["Flare"];
+      this.sparkEmitter.visible = layers["Spark"];
+      outGlow.visible = layers["Glow Outside"];
+      inGrow.visible = layers["Glow Inside"];
+    });
+    gui.close();
   }
 
   update() {
