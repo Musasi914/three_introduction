@@ -4,6 +4,10 @@ import GridAxesHelper from "./base/grid_axesHelper.js";
 import OrbitCon from "./base/OrbitCon.js";
 import LightSet from "./base/LightSet.js";
 import { FontLoader, TextGeometry } from "three/examples/jsm/Addons.js";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+gsap.registerPlugin(ScrollTrigger);
 
 class DemoCubesWorld extends BasicView {
   // controls: OrbitCon;
@@ -34,7 +38,7 @@ class DemoCubesWorld extends BasicView {
     const material = new THREE.MeshPhongMaterial({ color: 0xffffff, flatShading: true, shininess: 1 }); // front
 
     const loader = new FontLoader();
-    loader.load("font/helvetiker_regular.typeface.json", (font) => {
+    loader.load("/font/helvetiker_regular.typeface.json", (font) => {
       textGeo = new TextGeometry("Three.js", {
         font: font,
         size: 70,
@@ -78,21 +82,37 @@ class DemoCubesWorld extends BasicView {
       this.mousePercentY = 50;
     });
 
+    // gsap
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: ".first",
+        scrub: 1,
+        pin: true,
+
+        onEnterBack: () => {
+          gsap.to(this.camera.position, { z: 0 });
+        },
+      },
+    });
+    tl.to(this.camera.position, {
+      z: -100,
+    });
+    tl.to(this.containerEl, { autoAlpha: 0 });
     // レンダリング
     this.startRendering();
   }
 
   onAnimate() {
-    let targetOffset = (this.mousePercentX - 50) * 2;
+    let targetOffset = this.mousePercentX - 50;
     let nowOffset = this.camera.position.x;
-    let moveValueX = nowOffset + (targetOffset - nowOffset) * 0.07;
+    let moveValueX = nowOffset + (targetOffset - nowOffset) * 0.02;
     this.camera.position.x = moveValueX;
 
-    let targetOffsetY = 100 - this.mousePercentY;
+    let targetOffsetY = (100 - this.mousePercentY) / 2;
     let nowOffsetY = this.camera.position.y;
-    let moveValueY = nowOffsetY + (targetOffsetY - nowOffsetY) * 0.07;
+    let moveValueY = nowOffsetY + (targetOffsetY - nowOffsetY) * 0.02;
     this.camera.position.y = moveValueY;
-    this.camera.lookAt(0, 0, 0);
+    // this.camera.lookAt(0, 0, 0);
   }
 }
 

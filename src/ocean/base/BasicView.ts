@@ -8,12 +8,10 @@ export default class BasicView {
 
   constructor() {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x000000);
-    this.scene.fog = new THREE.Fog(0x000000, 250, 1400);
 
     this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 200000);
-    this.camera.position.set(0, 50, 500);
-    this.camera.lookAt(0, 0, 0);
+    this.camera.position.set(0, 10, 0);
+    this.camera.lookAt(0, 10, 0);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: window.devicePixelRatio === 1 });
     this.renderer.setClearColor(0x000000);

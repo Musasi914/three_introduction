@@ -1,6 +1,8 @@
 import * as THREE from "three";
 
 export default class BasicView {
+  canvasWidth: number = window.innerWidth;
+  canvasHeight: number = window.innerHeight;
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
   renderer: THREE.WebGLRenderer;
@@ -9,14 +11,14 @@ export default class BasicView {
   constructor() {
     this.scene = new THREE.Scene();
 
-    this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 200000);
+    this.camera = new THREE.PerspectiveCamera(45, this.canvasWidth / this.canvasHeight, 1, 200000);
     this.camera.position.set(300, 50, 300);
     this.camera.lookAt(0, 0, 0);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: window.devicePixelRatio === 1 });
     this.renderer.setClearColor(0x000000);
     this.renderer.setPixelRatio(window.devicePixelRatio);
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.setSize(this.canvasWidth, this.canvasHeight);
     this.containerEl = document.createElement("div");
     this.containerEl.appendChild(this.renderer.domElement);
     document.body.appendChild(this.containerEl);
@@ -27,10 +29,10 @@ export default class BasicView {
   }
 
   private handleResize() {
-    this.camera.aspect = window.innerWidth / window.innerHeight;
+    this.camera.aspect = this.canvasWidth / this.canvasHeight;
     this.camera.updateProjectionMatrix();
 
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.setSize(this.canvasWidth, this.canvasHeight);
     this.renderer.setPixelRatio(window.devicePixelRatio);
   }
 
