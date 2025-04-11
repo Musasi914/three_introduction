@@ -8,6 +8,10 @@ body {
   overscroll-behavior: none;
 }
 
+* {
+  box-sizing: border-box;
+}
+
 a {
   color: #ff0;
   text-decoration: none;
@@ -15,6 +19,12 @@ a {
 
 a:hover {
   text-decoration: underline;
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
 }
 
 button {
@@ -100,9 +110,118 @@ select {
   align-content: center;
 }
 
-.canvas {
+.canvasWrapper {
   position: fixed;
-  z-index: -1;
+  z-index: 10;
   top: 0;
   left: 0;
+}
+.canvas-3d {
+  display: block;
+}
+
+main {
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  background: #30c819;
+}
+.bg-yellow {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 100%;
+  background: #fff239d7;
+}
+
+.top {
+  position: relative;
+  height: 100svh;
+  display: flex;
+  align-items: center;
+
+  & .top_title {
+    margin: 0;
+    font-size: 10rem;
+    line-height: 1.1;
+    text-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  & .top_word {
+    display: block;
+    opacity: 0;
+  }
+}
+
+.about {
+  position: relative;
+  height: 150svh;
+  display: flex;
+  align-items: center;
+
+  & .about_lists {
+    width: 40%;
+    padding-inline: 5%;
+    margin-left: auto;
+    line-height: 1.8;
+    font-size: 3rem;
+    font-weight: bold;
+    text-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
+    color: #fbfbfb;
+  }
+}
+
+.cta {
+  position: relative;
+  height: 150svh;
+  display: flex;
+  align-items: center;
+
+  & .cta_inner {
+    width: 40%;
+    padding-inline: 5%;
+
+    & > * + * {
+      margin-top: 2rem;
+    }
+  }
+
+  & .cta_title {
+    font-size: 2rem;
+  }
+
+  & .cta_lnk {
+    display: inline-block;
+    width: 100%;
+    display: grid;
+    place-items: center;
+    padding: 10px;
+    border: 2px solid #ffffff;
+    color: #ffffff;
+    font-weight: bold;
+  }
+}
+
+.foot {
+  height: 120svh;
+  position: relative;
+  text-align: center;
+  text-shadow: 0 4px 4px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  font-size: 2rem;
+
+  & .foot_inner {
+    margin-bottom: 4rem;
+  }
+}
+
+#loader {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #30c819;
+  display: grid;
+  place-items: center;
+  font-size: 30rem;
 }

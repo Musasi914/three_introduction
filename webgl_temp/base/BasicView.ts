@@ -17,9 +17,11 @@ export default class BasicView {
 
     this.renderer = new THREE.WebGLRenderer({ antialias: window.devicePixelRatio === 1 });
     this.renderer.setClearColor(0x000000);
-    this.renderer.setPixelRatio(window.devicePixelRatio);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(this.canvasWidth, this.canvasHeight);
     this.containerEl = document.createElement("div");
+    this.containerEl.classList.add("canvasWrapper");
+    this.renderer.domElement.classList.add("canvas-3d");
     this.containerEl.appendChild(this.renderer.domElement);
     document.body.appendChild(this.containerEl);
 
@@ -29,11 +31,14 @@ export default class BasicView {
   }
 
   private handleResize() {
+    this.canvasWidth = window.innerWidth;
+    this.canvasHeight = window.innerHeight;
+
     this.camera.aspect = this.canvasWidth / this.canvasHeight;
     this.camera.updateProjectionMatrix();
 
     this.renderer.setSize(this.canvasWidth, this.canvasHeight);
-    this.renderer.setPixelRatio(window.devicePixelRatio);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   }
 
   startRendering() {
