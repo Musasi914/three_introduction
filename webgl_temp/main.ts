@@ -10,7 +10,7 @@ class DemoCubesWorld extends BasicView {
   constructor() {
     super();
 
-    // 地面
+    // 地面&矢印
     const gridAxes = new GridAxesHelper(400);
     this.scene.add(gridAxes);
 

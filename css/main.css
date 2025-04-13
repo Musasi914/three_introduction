@@ -225,3 +225,18 @@ main {
   place-items: center;
   font-size: 30rem;
 }
+
+.desc-title {
+  font-size: 2rem;
+  font-family: "Times New Roman", Times, serif;
+}
+.desc {
+  position: relative;
+  z-index: 11;
+  width: min(40%, 500px);
+  margin-inline: auto;
+  text-align: center;
+  color: white;
+  margin-top: 3rem;
+  border: 1px solid white;
+}

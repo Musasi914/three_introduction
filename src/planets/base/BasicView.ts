@@ -2,17 +2,18 @@ import * as THREE from "three";
 
 export default class BasicView {
   private canvasWidth: number = window.innerWidth;
-  private canvasHeight: number = window.innerHeight;
+  canvasHeight: number = window.innerHeight;
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
   renderer: THREE.WebGLRenderer;
-  private containerEl: HTMLElement;
+  containerEl: HTMLElement;
 
   constructor() {
     this.scene = new THREE.Scene();
+    this.scene.fog = new THREE.Fog(0x000000, 200, 2000);
 
     this.camera = new THREE.PerspectiveCamera(45, this.canvasWidth / this.canvasHeight, 1, 200000);
-    this.camera.position.set(300, 50, 300);
+    this.camera.position.set(900, 50, 0);
     this.camera.lookAt(0, 0, 0);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: window.devicePixelRatio === 1 });
