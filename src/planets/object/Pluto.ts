@@ -3,10 +3,10 @@ import * as THREE from "three";
 export default class Pluto extends THREE.Group {
   private pluto;
 
-  constructor() {
+  constructor(manager: THREE.LoadingManager) {
     super();
 
-    const loader = new THREE.TextureLoader();
+    const loader = new THREE.TextureLoader(manager);
 
     // 地球
     const plutoGeo = new THREE.SphereGeometry(100, 60, 60);

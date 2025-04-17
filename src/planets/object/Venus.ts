@@ -2,10 +2,10 @@ import * as THREE from "three";
 
 export default class Venus extends THREE.Group {
   venus;
-  constructor() {
+  constructor(manager: THREE.LoadingManager) {
     super();
 
-    const loader = new THREE.TextureLoader();
+    const loader = new THREE.TextureLoader(manager);
 
     // 金星
     const geometry = new THREE.SphereGeometry(100, 60, 60);

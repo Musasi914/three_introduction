@@ -22,12 +22,23 @@ class DemoCubesWorld extends BasicView {
   constructor() {
     super();
 
+    const loadingManager = new THREE.LoadingManager();
+    const $progress = document.querySelector(".progress") as HTMLElement;
+    loadingManager.onProgress = function (url, itemsLoaded, itemsTotal) {
+      $progress.textContent = "Loading file: " + url + ".\nLoaded " + itemsLoaded + " of " + itemsTotal + " files.";
+      console.log("Loading file: " + url + ".\nLoaded " + itemsLoaded + " of " + itemsTotal + " files.");
+    };
+    loadingManager.onLoad = function () {
+      $progress.textContent = "complete!";
+      gsap.to($progress, { opacity: 0, duration: 3 });
+    };
+
     this.setHelpers();
 
-    this.earth = new Earth();
-    this.mars = new Mars();
-    this.venus = new Venus();
-    this.pluto = new Pluto();
+    this.earth = new Earth(loadingManager);
+    this.mars = new Mars(loadingManager);
+    this.venus = new Venus(loadingManager);
+    this.pluto = new Pluto(loadingManager);
     this.planetArray.push(this.earth, this.mars, this.venus, this.pluto);
     this.setPlanetPositions();
 
@@ -49,34 +60,43 @@ class DemoCubesWorld extends BasicView {
           isRotating = false;
         },
       });
-      tl.to(".desc", { scale: 0, opacity: 0, duration: 0.2 }, 0);
+      tl.to(
+        ".desc",
+        {
+          scale: 0,
+          opacity: 0,
+          duration: 0.2,
+          onComplete: () => {
+            const position = Math.floor(Math.abs(targetRotationY) % (Math.PI * 2));
+            switch (position) {
+              case 0:
+                title.textContent = "Earth";
+                text.textContent = "こんな美しい惑星ある？";
+                break;
+
+              case 1:
+                title.textContent = "Mars";
+                text.textContent = "地球のすぐ外側を公転してる";
+                break;
+
+              case 3:
+                title.textContent = "Venus";
+                text.textContent = "地球に最も近い惑星";
+                break;
+
+              case 4:
+                title.textContent = "Pluto";
+                text.textContent = "太陽から最も遠い天体";
+                break;
+
+              default:
+                break;
+            }
+          },
+        },
+        0
+      );
       tl.to(".desc", { scale: 1, opacity: 1, duration: 0.2, ease: "back" }, 0.8);
-
-      const position = Math.abs(targetRotationY) % (Math.PI * 2);
-      switch (position) {
-        case 0:
-          title.textContent = "Earth";
-          text.textContent = "こんな美しい惑星ある？";
-          break;
-
-        case Math.PI / 2:
-          title.textContent = "Mars";
-          text.textContent = "地球のすぐ外側を公転してる";
-          break;
-
-        case Math.PI:
-          title.textContent = "Venus";
-          text.textContent = "地球に最も近い惑星";
-          break;
-
-        case Math.PI * 2 * (3 / 4):
-          title.textContent = "Pluto";
-          text.textContent = "太陽から最も遠い天体";
-          break;
-
-        default:
-          break;
-      }
     });
 
     this.startRendering();
