@@ -4,6 +4,7 @@ import { OrbitControls } from "three/examples/jsm/Addons.js";
 import GUI from "lil-gui";
 import vertexShader from "./shaders/vertexShader.glsl";
 import fragmentShader from "./shaders/fragmentShader.glsl";
+import skyImg from "./textures/sky.jpg";
 
 const gui = new GUI();
 const WIDTH = window.innerWidth;
@@ -14,8 +15,8 @@ renderer.pixelRatio = window.devicePixelRatio;
 renderer.setSize(WIDTH, HEIGHT);
 document.body.appendChild(renderer.domElement);
 
-const camera = new THREE.PerspectiveCamera(45, WIDTH / HEIGHT, 1, 2000);
-camera.position.set(10, 5, 10);
+const camera = new THREE.PerspectiveCamera(45, WIDTH / HEIGHT, 0.01, 100);
+camera.position.set(0, 0.23, 0);
 camera.lookAt(0, 0, 0);
 
 const scene = new THREE.Scene();
@@ -23,8 +24,8 @@ const scene = new THREE.Scene();
 //-----------//-----------//-----------//-----------//-----------
 
 // orbitcontrols
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.update();
+// const controls = new OrbitControls(camera, renderer.domElement);
+// controls.update();
 
 //-----------//-----------//-----------//-----------//-----------
 
@@ -38,11 +39,15 @@ scene.add(spotLight);
 
 //-----------//-----------//-----------//-----------//-----------
 
-scene.add(new THREE.GridHelper(600));
-scene.add(new THREE.AxesHelper(300));
+// scene.add(new THREE.GridHelper(600));
+// scene.add(new THREE.AxesHelper(300));
 
 const textureLoader = new THREE.TextureLoader();
-const geometry = new THREE.PlaneGeometry(1, 1, 32, 32);
+const skyTexture = textureLoader.load(skyImg);
+skyTexture.wrapT = THREE.RepeatWrapping;
+scene.background = skyTexture;
+
+const geometry = new THREE.PlaneGeometry(10, 10, 512, 512);
 
 const colorObject = {
   depthColor: "#2d81ae",
@@ -51,14 +56,17 @@ const colorObject = {
 
 const material = new THREE.ShaderMaterial({
   uniforms: {
-    uWaveLength: { value: 0.2 },
-    uFrequency: { value: new THREE.Vector2(5.0, 2.5) },
+    uWaveLength: { value: 0.38 },
+    uFrequency: { value: new THREE.Vector2(6.6, 3.5) },
     uTime: { value: 0 },
     uWaveSpeed: { value: 0.75 },
     uDepthColor: { value: new THREE.Color(colorObject.depthColor) },
     uSurfaceColor: { value: new THREE.Color(colorObject.surfaceColor) },
-    uColorOffset: { value: 0.03 },
-    uColorMultiplier: { value: 7.6 },
+    uColorOffset: { value: 0.13 },
+    uColorMultiplier: { value: 9 },
+    uSmallWaveElevation: { value: 0.15 },
+    uSmallWaveFrequency: { value: 3.0 },
+    uSmallWaveSpeed: { value: 0.2 },
   },
   vertexShader: vertexShader,
   fragmentShader: fragmentShader,
@@ -67,7 +75,7 @@ const mesh = new THREE.Mesh(geometry, material);
 mesh.rotation.x = -Math.PI / 2;
 scene.add(mesh);
 
-gui.add(material.uniforms.uWaveLength, "value", 0, 1, 0.01);
+gui.add(material.uniforms.uWaveLength, "value", 0, 1, 0.01).name("uWaveLength");
 gui.add(material.uniforms.uFrequency.value, "x", 0, 10, 0.01).name("uFrequencyX");
 gui.add(material.uniforms.uFrequency.value, "y", 0, 10, 0.01).name("uFrequencyY");
 gui.add(material.uniforms.uWaveSpeed, "value", 0, 4, 0.01).name("uWaveSpeed");
@@ -79,6 +87,9 @@ gui.addColor(colorObject, "surfaceColor").onChange((value: string) => {
 });
 gui.add(material.uniforms.uColorOffset, "value", 0, 1, 0.001).name("uColorOffset");
 gui.add(material.uniforms.uColorMultiplier, "value", 0, 10, 0.001).name("uColorMultiplier");
+gui.add(material.uniforms.uSmallWaveElevation, "value", 0, 1, 0.001).name("uSmallWaveElevation");
+gui.add(material.uniforms.uSmallWaveFrequency, "value", 0, 10, 0.001).name("uSmallWaveFrequency");
+gui.add(material.uniforms.uSmallWaveSpeed, "value", 0, 1, 0.001).name("uSmallWaveSpeed");
 
 //-----------//-----------//-----------//-----------//-----------
 
@@ -87,7 +98,13 @@ const clock = new THREE.Clock();
 function animate() {
   const elapsedTime = clock.getElapsedTime();
   material.uniforms.uTime.value = elapsedTime;
-  controls.update();
+
+  camera.position.x = Math.sin(elapsedTime * 0.17) * 3.0;
+  camera.position.z = Math.cos(elapsedTime * 0.17) * 3.0;
+
+  camera.lookAt(Math.cos(elapsedTime), Math.sin(elapsedTime) * 0.5, Math.sin(elapsedTime) * 0.4);
+
+  // controls.update();
 
   renderer.render(scene, camera);
 }
