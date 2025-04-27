@@ -16,7 +16,8 @@
     "@types/three": "^0.174.0",
     "gsap": "^3.12.7",
     "lenis": "^1.2.3",
-    "three": "^0.174.0"
+    "three": "^0.174.0",
+    "webgl-debug": "^2.0.1"
   },
   "devDependencies": {
     "lil-gui": "^0.20.0",
