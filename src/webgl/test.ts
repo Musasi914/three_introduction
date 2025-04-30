@@ -10,13 +10,15 @@ function setupShaders(gl: WebGLRenderingContext) {
   gl.attachShader(shaderProgram, vertexShader);
   gl.attachShader(shaderProgram, fragmentShader);
   gl.linkProgram(shaderProgram);
+
   if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) throw new Error(`${gl.getProgramInfoLog(shaderProgram)}`);
+
   gl.useProgram(shaderProgram);
 
   const vertexPositionLocation = gl.getAttribLocation(shaderProgram, "aVertexPosition");
   const vertexColorLocation = gl.getAttribLocation(shaderProgram, "aVertexColor");
   gl.enableVertexAttribArray(vertexPositionLocation);
-  gl.enableVertexAttribArray(vertexColorLocation);
+  // gl.enableVertexAttribArray(vertexColorLocation);
 
   return {
     shaderProgram,
@@ -33,11 +35,27 @@ function loadShader(gl: WebGLRenderingContext, shaderSource: string, type: "vert
   return shader;
 }
 
-function draw(modelViewMatrix: mat4) {
-  mat4.perspective(modelViewMatrix, 60, canvas.width / canvas.height, 0.1, 100.0);
+function draw(gl: WebGLRenderingContext, shaderProgram: WebGLProgram, projectionMatrix: mat4, modelViewMatrix: mat4) {
+  gl.viewport(0, 0, canvas.width, canvas.height);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+
+  mat4.perspective(projectionMatrix, Math.PI / 3, canvas.width / canvas.height, 0.1, 100.0);
+  uploadProjectionMatrixToShader(gl, shaderProgram, projectionMatrix);
+
   mat4.identity(modelViewMatrix);
-  mat4.lookAt(modelViewMatrix, [8, 5, 10], [0, 0, 0], [0, 1, 0]);
+  mat4.lookAt(modelViewMatrix, [8, 10, 15], [0, 0, 0], [0, 1, 0]);
   mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 3.0, 0.0]);
+
+  pushMatrix(modelViewMatrix, stack);
+  drawFloor(vertexPositionLocation, vertexColorLocation, [1.0, 0.0, 0.0, 1.0], modelViewMatrix);
+  modelViewMatrix = popMatrix(stack);
+
+  pushMatrix(modelViewMatrix, stack);
+  drawTable(gl, shaderProgram, modelViewMatrix, stack);
+  modelViewMatrix = popMatrix(stack);
+
+  // Draw box on top of the table
+  drawBox(vertexPositionLocation, vertexColorLocation, [1.0, 1.0, 1.0, 1.0], modelViewMatrix, stack);
 }
 
 function uploadModelViewMatrixToShader(gl: WebGLRenderingContext, shaderProgram: WebGLProgram, modelViewMatrix: mat4) {
@@ -68,7 +86,7 @@ function drawTable(gl: WebGLRenderingContext, shaderProgram: WebGLProgram, model
   // テーブルの天板を描画
   pushMatrix(modelViewMatrix, stack);
   mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 1.0, 0.0]);
-  mat4.scale(modelViewMatrix, modelViewMatrix, [2.0, 0.1, 1.0]);
+  mat4.scale(modelViewMatrix, modelViewMatrix, [2.0, 0.1, 2.0]);
   uploadModelViewMatrixToShader(gl, shaderProgram, modelViewMatrix);
   // 立方体（今は直方体にスケール変換されている）を茶色で描く
   drawCube(gl, shaderProgram, [0.72, 0.53, 0.04, 1.0]);
@@ -124,8 +142,8 @@ function drawCube(gl: WebGLRenderingContext, shaderProgram: WebGLProgram, color:
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
 
   // 頂点属性設定
-  gl.vertexAttribPointer(vertexPositionLocation, 3, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(vertexPositionLocation);
+  gl.vertexAttribPointer(vertexPositionLocation, 3, gl.FLOAT, false, 0, 0);
 
   // 色設定
   gl.disableVertexAttribArray(vertexColorLocation);
@@ -134,22 +152,218 @@ function drawCube(gl: WebGLRenderingContext, shaderProgram: WebGLProgram, color:
   gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
 }
 
-const canvas = document.querySelector("#myGLCanvas") as HTMLCanvasElement;
-const gl = canvas.getContext("webgl");
-if (gl == null) throw new Error("glコンテキストにエラー");
+function drawFloor(
+  vertexPositionLocation: number,
+  vertexColorLocation: number,
+  color: [number, number, number, number],
+  modelViewMatrix: mat4
+) {
+  gl.disableVertexAttribArray(vertexColorLocation);
+  gl.vertexAttrib4f(vertexColorLocation, ...color);
 
-const { shaderProgram } = setupShaders(gl);
+  gl.bindBuffer(gl.ARRAY_BUFFER, floorVertexPositionBuffer);
+  gl.vertexAttribPointer(vertexPositionLocation, 3, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, floorIndexBuffer);
+
+  // pushMatrix(modelViewMatrix, stack);
+  mat4.translate(modelViewMatrix, modelViewMatrix, [0, -1.1, 0]);
+  uploadModelViewMatrixToShader(gl, shaderProgram, modelViewMatrix);
+  // modelViewMatrix = popMatrix(stack);
+
+  gl.drawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_SHORT, 0);
+}
+
+function drawBox(
+  vertexPositionLocation: number,
+  vertexColorLocation: number,
+  color: [number, number, number, number],
+  modelViewMatrix: mat4,
+  stack: mat4[]
+) {
+  pushMatrix(modelViewMatrix, stack);
+  mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 2.0, 0.0]);
+  uploadModelViewMatrixToShader(gl, shaderProgram, modelViewMatrix);
+
+  gl.disableVertexAttribArray(vertexColorLocation);
+  gl.vertexAttrib4f(vertexColorLocation, ...color);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPositionBuffer);
+  gl.vertexAttribPointer(vertexPositionLocation, 3, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeVertexIndexBuffer);
+
+  gl.drawElements(gl.TRIANGLES, 36, gl.UNSIGNED_SHORT, 0);
+
+  modelViewMatrix = popMatrix(stack);
+}
+
+function setupFloorBuffers(gl: WebGLRenderingContext) {
+  const floorVertexPositionBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, floorVertexPositionBuffer);
+  const floorVertexPosition = [5.0, 0.0, 5.0, 5.0, 0.0, -5.0, -5.0, 0.0, -5.0, -5.0, 0.0, 5.0];
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(floorVertexPosition), gl.STATIC_DRAW);
+
+  const floorIndexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, floorIndexBuffer);
+  const floorIndices = [0, 1, 2, 3];
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(floorIndices), gl.STATIC_DRAW);
+
+  return { floorVertexPositionBuffer, floorIndexBuffer };
+}
+
+function setupBoxBuffers(gl: WebGLRenderingContext) {
+  const cubeVertexPositionBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPositionBuffer);
+  const cubeVertexPosition = [
+    // Front face
+    1.0,
+    1.0,
+    1.0, //v0
+    -1.0,
+    1.0,
+    1.0, //v1
+    -1.0,
+    -1.0,
+    1.0, //v2
+    1.0,
+    -1.0,
+    1.0, //v3
+
+    // Back face
+    1.0,
+    1.0,
+    -1.0, //v4
+    -1.0,
+    1.0,
+    -1.0, //v5
+    -1.0,
+    -1.0,
+    -1.0, //v6
+    1.0,
+    -1.0,
+    -1.0, //v7
+
+    // Left face
+    -1.0,
+    1.0,
+    1.0, //v8
+    -1.0,
+    1.0,
+    -1.0, //v9
+    -1.0,
+    -1.0,
+    -1.0, //v10
+    -1.0,
+    -1.0,
+    1.0, //v11
+
+    // Right face
+    1.0,
+    1.0,
+    1.0, // v12
+    1.0,
+    -1.0,
+    1.0, // v13
+    1.0,
+    -1.0,
+    -1.0, // v14
+    1.0,
+    1.0,
+    -1.0, // v15
+
+    // Top face
+    1.0,
+    1.0,
+    1.0, // v16
+    1.0,
+    1.0,
+    -1.0, // v17
+    -1.0,
+    1.0,
+    -1.0, // v18
+    -1.0,
+    1.0,
+    1.0, // v19
+
+    // Bottom face
+    1.0,
+    -1.0,
+    1.0, // v20
+    1.0,
+    -1.0,
+    -1.0, // v21
+    -1.0,
+    -1.0,
+    -1.0, // v22
+    -1.0,
+    -1.0,
+    1.0, // v23
+  ];
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cubeVertexPosition), gl.STATIC_DRAW);
+
+  const cubeVertexIndexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeVertexIndexBuffer);
+  const cuveVertexIndices = [
+    0,
+    1,
+    2,
+    0,
+    2,
+    3, // Front face
+    4,
+    6,
+    5,
+    4,
+    7,
+    6, // Back face
+    8,
+    9,
+    10,
+    8,
+    10,
+    11, // Left face
+    12,
+    13,
+    14,
+    12,
+    14,
+    15, // Right face
+    16,
+    17,
+    18,
+    16,
+    18,
+    19, // Top face
+    20,
+    22,
+    21,
+    20,
+    23,
+    22, // Bottom face
+  ];
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(cuveVertexIndices), gl.STATIC_DRAW);
+
+  return { cubeVertexPositionBuffer, cubeVertexIndexBuffer };
+}
+
+const canvas = document.querySelector("#myGLCanvas") as HTMLCanvasElement;
+const gl = canvas.getContext("webgl") as WebGLRenderingContext;
+
+const { shaderProgram, vertexPositionLocation, vertexColorLocation } = setupShaders(gl);
+
+const { floorVertexPositionBuffer, floorIndexBuffer } = setupFloorBuffers(gl);
+const { cubeVertexPositionBuffer, cubeVertexIndexBuffer } = setupBoxBuffers(gl);
 
 let modelViewMatrix = mat4.create();
 let projectionMatrix = mat4.create();
 let stack: mat4[] = [];
-
-mat4.perspective(projectionMatrix, Math.PI / 4, canvas.width / canvas.height, 0.1, 100.0);
-uploadProjectionMatrixToShader(gl, shaderProgram, projectionMatrix);
-
 gl.clearColor(0.9, 0.9, 0.9, 1.0);
-gl.clear(gl.COLOR_BUFFER_BIT);
 gl.enable(gl.DEPTH_TEST);
 
-draw(modelViewMatrix);
-drawTable(gl, shaderProgram, modelViewMatrix, stack);
+draw(gl, shaderProgram, projectionMatrix, modelViewMatrix);
+
+const error = gl.getError();
+if (error !== gl.NO_ERROR) {
+  console.error("WebGL Error:", error);
+}
