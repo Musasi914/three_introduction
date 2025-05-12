@@ -15,6 +15,7 @@ document.body.appendChild(renderer.domElement);
 // 2, 物体を描画
 const geometry = new THREE.TorusGeometry(300, 100, 64, 100);
 const material = new THREE.MeshStandardMaterial({ color: 0x6699ff, roughness: 0 });
+
 const mesh = new THREE.Mesh(geometry, material);
 
 scene.add(mesh);

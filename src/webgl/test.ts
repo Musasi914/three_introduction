@@ -11,7 +11,8 @@ function setupShaders(gl: WebGLRenderingContext) {
   gl.attachShader(shaderProgram, fragmentShader);
   gl.linkProgram(shaderProgram);
 
-  if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) throw new Error(`${gl.getProgramInfoLog(shaderProgram)}`);
+  if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS) && !gl.isContextLost())
+    throw new Error(`${gl.getProgramInfoLog(shaderProgram)}`);
 
   gl.useProgram(shaderProgram);
 
@@ -31,7 +32,7 @@ function loadShader(gl: WebGLRenderingContext, shaderSource: string, type: "vert
   const shader = gl.createShader(type === "vertex" ? gl.VERTEX_SHADER : gl.FRAGMENT_SHADER) as WebGLShader;
   gl.shaderSource(shader, shaderSource);
   gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error(`${gl.getShaderInfoLog(shader)}`);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS) && !gl.isContextLost()) throw new Error(`${gl.getShaderInfoLog(shader)}`);
   return shader;
 }
 
@@ -183,6 +184,7 @@ function drawBox(
 ) {
   pushMatrix(modelViewMatrix, stack);
   mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 2.0, 0.0]);
+  mat4.scale(modelViewMatrix, modelViewMatrix, [0.5, 0.5, 0.5]);
   uploadModelViewMatrixToShader(gl, shaderProgram, modelViewMatrix);
 
   gl.disableVertexAttribArray(vertexColorLocation);
@@ -347,8 +349,19 @@ function setupBoxBuffers(gl: WebGLRenderingContext) {
   return { cubeVertexPositionBuffer, cubeVertexIndexBuffer };
 }
 
+function handleContextLost() {
+  console.log("context lost");
+}
+
+function handleContextRestored() {
+  console.log("context restored");
+}
+
 const canvas = document.querySelector("#myGLCanvas") as HTMLCanvasElement;
 const gl = canvas.getContext("webgl") as WebGLRenderingContext;
+
+canvas.addEventListener("webglcontextlost", handleContextLost);
+canvas.addEventListener("webglcontextrestored", handleContextRestored);
 
 const { shaderProgram, vertexPositionLocation, vertexColorLocation } = setupShaders(gl);
 
@@ -362,8 +375,3 @@ gl.clearColor(0.9, 0.9, 0.9, 1.0);
 gl.enable(gl.DEPTH_TEST);
 
 draw(gl, shaderProgram, projectionMatrix, modelViewMatrix);
-
-const error = gl.getError();
-if (error !== gl.NO_ERROR) {
-  console.error("WebGL Error:", error);
-}
