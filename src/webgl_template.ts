@@ -18,6 +18,7 @@ camera.position.set(-250, 0, -250);
 camera.lookAt(0, 0, 0);
 
 const scene = new THREE.Scene();
+scene.add(camera);
 
 //-----------//-----------//-----------//-----------//-----------
 

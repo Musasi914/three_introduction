@@ -14,6 +14,7 @@ export default class BasicView {
     this.camera = new THREE.PerspectiveCamera(45, this.canvasWidth / this.canvasHeight, 1, 200000);
     this.camera.position.set(300, 50, 300);
     this.camera.lookAt(0, 0, 0);
+    this.scene.add(this.camera);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: window.devicePixelRatio === 1 });
     this.renderer.setClearColor(0x000000);
