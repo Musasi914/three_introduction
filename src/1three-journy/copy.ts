@@ -2,6 +2,8 @@ import GUI from "lil-gui";
 import * as THREE from "three";
 import { OrbitControls, Timer } from "three/examples/jsm/Addons.js";
 // import * as CANNON from "cannon-es";
+// import vertexShader from "/shader/threejs-journy/galaxy/vertexShader.glsl?raw";
+// import fragmentShader from "/shader/threejs-journy/galaxy/fragmentShader.glsl?raw";
 
 let scene: THREE.Scene;
 let camera: THREE.PerspectiveCamera;

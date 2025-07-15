@@ -1,9 +1,8 @@
 import GUI from "lil-gui";
 import * as THREE from "three";
-import { AnaglyphEffect, OrbitControls, Timer } from "three/examples/jsm/Addons.js";
-// import * as CANNON from "cannon-es";
-import vertexShaderSource from "/shader/threejs-journy/Patterns/vertexShader.glsl?raw";
-import fragmentShaderSource from "/shader/threejs-journy/Patterns/fragmentShader.glsl?raw";
+import { GLTFLoader, OrbitControls, Timer } from "three/examples/jsm/Addons.js";
+import vertexShader from "/shader/threejs-journy/coffee/vertexShader.glsl?raw";
+import fragmentShader from "/shader/threejs-journy/coffee/fragmentShader.glsl?raw";
 
 let scene: THREE.Scene;
 let camera: THREE.PerspectiveCamera;
@@ -13,7 +12,7 @@ let controls: OrbitControls;
 const cameraFov = 75;
 const cameraNear = 0.1;
 const cameraFar = 100;
-const cameraPosition: [number, number, number] = [0, 0, 1.5];
+const cameraPosition: [number, number, number] = [8, 10, 12];
 
 const SIZES = {
   width: window.innerWidth,
@@ -21,6 +20,7 @@ const SIZES = {
 };
 
 const textureLoader = new THREE.TextureLoader();
+const gltfLoader = new GLTFLoader();
 
 const timer = new Timer();
 const gui = new GUI();
@@ -44,8 +44,6 @@ function createRenderer() {
 
   renderer.setSize(SIZES.width, SIZES.height);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  // renderer.shadowMap.enabled = true;
-  // renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   // ToneMapping Cimonさんは下3つをよく使うらしい
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -75,63 +73,47 @@ function onWindowResize() {
 function setControls() {
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
-  // controls.target.set(0, 0.75, 0);
+  controls.target.y = 3;
   return controls;
 }
 
-function createLights() {
-  const ambientLight = new THREE.AmbientLight(0xffffff, 2.4);
-
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 1.8);
-  directionalLight.castShadow = true;
-  directionalLight.shadow.mapSize.set(1024, 1024);
-  directionalLight.shadow.camera.far = 15;
-  directionalLight.shadow.camera.left = -7;
-  directionalLight.shadow.camera.top = 7;
-  directionalLight.shadow.camera.right = 7;
-  directionalLight.shadow.camera.bottom = -7;
-  directionalLight.position.set(5, 5, 5);
-
-  return { ambientLight, directionalLight };
+function loadGltf() {
+  gltfLoader.load("/textures/models/coffee/bakedModel.glb", (gltf) => {
+    const bakedMesh = gltf.scene.getObjectByName("baked");
+    if (bakedMesh && (bakedMesh as THREE.Mesh).material && ((bakedMesh as THREE.Mesh).material as THREE.MeshStandardMaterial).map) {
+      (((bakedMesh as THREE.Mesh).material as THREE.MeshStandardMaterial).map as THREE.Texture).anisotropy = 8;
+    }
+    scene.add(gltf.scene);
+  });
 }
 
-function createFloor() {
-  const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(10, 10),
-    new THREE.MeshStandardMaterial({
-      color: "#444444",
-      metalness: 0,
-      roughness: 0.5,
-    })
-  );
-  floor.rotation.x = -Math.PI / 2;
-  floor.receiveShadow = true;
+let smokeMaterial: THREE.ShaderMaterial;
 
-  return floor;
-}
+function createSmoke() {
+  const perlinTexture = textureLoader.load("/textures/models/coffee/perlin.png");
+  // perlinTexture.wrapS = THREE.RepeatWrapping;
+  perlinTexture.wrapT = THREE.RepeatWrapping;
 
-let material: THREE.ShaderMaterial;
-function createPlane() {
-  // Geometry
-  const geometry = new THREE.PlaneGeometry(1, 1, 32, 32);
+  const smokeGeometry = new THREE.PlaneGeometry(1, 1, 16, 64);
+  smokeGeometry.translate(0, 0.5, 0);
+  smokeGeometry.scale(1.5, 6, 1.5);
 
-  // Material
-  const flagTexture = textureLoader.load("/textures/wood_cabinet_worn_long/wood_cabinet_worn_long_diff_1k.jpg");
-
-  material = new THREE.ShaderMaterial({
-    vertexShader: vertexShaderSource,
-    fragmentShader: fragmentShaderSource,
-    uniforms: {
-      uTime: { value: 0 },
-    },
+  smokeMaterial = new THREE.ShaderMaterial({
+    vertexShader,
+    fragmentShader,
     side: THREE.DoubleSide,
+    transparent: true,
+    depthWrite: false,
+    // blending: THREE.AdditiveBlending,
+    uniforms: {
+      uTime: new THREE.Uniform(0),
+      uPerlinTexture: new THREE.Uniform(perlinTexture),
+    },
   });
 
-  // GUI
-
-  // Mesh
-  const mesh = new THREE.Mesh(geometry, material);
-  return mesh;
+  const smoke = new THREE.Mesh(smokeGeometry, smokeMaterial);
+  smoke.position.y = 1.83;
+  scene.add(smoke);
 }
 
 function init() {
@@ -142,12 +124,8 @@ function init() {
   const controls = setControls();
   controls.update();
 
-  const { ambientLight, directionalLight } = createLights();
-  scene.add(ambientLight, directionalLight);
-
-  const mesh = createPlane();
-  scene.add(mesh);
-
+  loadGltf();
+  createSmoke();
   window.addEventListener("resize", onWindowResize);
 
   render();
@@ -164,10 +142,13 @@ function tick() {
   timer.update();
   const elapsedTime = timer.getElapsed();
 
-  material.uniforms.uTime.value = elapsedTime;
-
   // Update Controls
   controls.update();
+
+  // Update Smoke
+  if (smokeMaterial) {
+    smokeMaterial.uniforms.uTime.value = elapsedTime;
+  }
 
   // Render
   renderer.render(scene, camera);

@@ -1,9 +1,9 @@
 import GUI from "lil-gui";
 import * as THREE from "three";
-import { AnaglyphEffect, OrbitControls, Timer } from "three/examples/jsm/Addons.js";
+import { OrbitControls, Timer } from "three/examples/jsm/Addons.js";
 // import * as CANNON from "cannon-es";
-import vertexShaderSource from "/shader/threejs-journy/Patterns/vertexShader.glsl?raw";
-import fragmentShaderSource from "/shader/threejs-journy/Patterns/fragmentShader.glsl?raw";
+import vertexShader from "/shader/threejs-journy/hologram/vertexShader.glsl?raw";
+import fragmentShader from "/shader/threejs-journy/hologram/fragmentShader.glsl?raw";
 
 let scene: THREE.Scene;
 let camera: THREE.PerspectiveCamera;
@@ -13,7 +13,7 @@ let controls: OrbitControls;
 const cameraFov = 75;
 const cameraNear = 0.1;
 const cameraFar = 100;
-const cameraPosition: [number, number, number] = [0, 0, 1.5];
+const cameraPosition: [number, number, number] = [0, 2, 6];
 
 const SIZES = {
   width: window.innerWidth,
@@ -75,7 +75,7 @@ function onWindowResize() {
 function setControls() {
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
-  // controls.target.set(0, 0.75, 0);
+  controls.target.set(0, 0.75, 0);
   return controls;
 }
 
@@ -110,28 +110,39 @@ function createFloor() {
   return floor;
 }
 
+let trusknot: THREE.Mesh;
+let box: THREE.Mesh;
+let sphere: THREE.Mesh;
 let material: THREE.ShaderMaterial;
-function createPlane() {
-  // Geometry
-  const geometry = new THREE.PlaneGeometry(1, 1, 32, 32);
 
-  // Material
-  const flagTexture = textureLoader.load("/textures/wood_cabinet_worn_long/wood_cabinet_worn_long_diff_1k.jpg");
-
+function createObjects() {
   material = new THREE.ShaderMaterial({
-    vertexShader: vertexShaderSource,
-    fragmentShader: fragmentShaderSource,
+    vertexShader,
+    fragmentShader,
     uniforms: {
       uTime: { value: 0 },
     },
+    transparent: true,
     side: THREE.DoubleSide,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
   });
 
-  // GUI
+  trusknot = new THREE.Mesh(new THREE.TorusKnotGeometry(1, 0.4, 100, 16), material);
+  trusknot.position.set(0, 0, 0);
+  scene.add(trusknot);
 
-  // Mesh
-  const mesh = new THREE.Mesh(geometry, material);
-  return mesh;
+  box = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), material);
+  box.position.set(4, 0, 0);
+  scene.add(box);
+
+  sphere = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), material);
+  sphere.position.set(-4, 0, 0);
+  scene.add(sphere);
+
+  const plane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1, 32, 32), material);
+  plane.position.z = 4;
+  scene.add(plane);
 }
 
 function init() {
@@ -142,11 +153,13 @@ function init() {
   const controls = setControls();
   controls.update();
 
-  const { ambientLight, directionalLight } = createLights();
-  scene.add(ambientLight, directionalLight);
+  // const { ambientLight, directionalLight } = createLights();
+  // scene.add(ambientLight, directionalLight);
 
-  const mesh = createPlane();
-  scene.add(mesh);
+  // const floor = createFloor();
+  // scene.add(floor);
+
+  createObjects();
 
   window.addEventListener("resize", onWindowResize);
 
@@ -164,10 +177,17 @@ function tick() {
   timer.update();
   const elapsedTime = timer.getElapsed();
 
-  material.uniforms.uTime.value = elapsedTime;
-
   // Update Controls
   controls.update();
+
+  material.uniforms.uTime.value = elapsedTime;
+
+  trusknot.rotation.x = -elapsedTime * 0.1;
+  trusknot.rotation.y = elapsedTime * 0.2;
+  box.rotation.x = -elapsedTime * 0.1;
+  box.rotation.y = elapsedTime * 0.2;
+  sphere.rotation.x = -elapsedTime * 0.1;
+  sphere.rotation.y = elapsedTime * 0.2;
 
   // Render
   renderer.render(scene, camera);

@@ -1,9 +1,8 @@
 import GUI from "lil-gui";
 import * as THREE from "three";
-import { AnaglyphEffect, OrbitControls, Timer } from "three/examples/jsm/Addons.js";
-// import * as CANNON from "cannon-es";
-import vertexShaderSource from "/shader/threejs-journy/Patterns/vertexShader.glsl?raw";
-import fragmentShaderSource from "/shader/threejs-journy/Patterns/fragmentShader.glsl?raw";
+import { OrbitControls, Timer, VertexTangentsHelper } from "three/examples/jsm/Addons.js";
+import vertexShader from "../../shader/threejs-journy/sea/vertexShader.glsl?raw";
+import fragmentShader from "../../shader/threejs-journy/sea/fragmentShader.glsl?raw";
 
 let scene: THREE.Scene;
 let camera: THREE.PerspectiveCamera;
@@ -13,7 +12,7 @@ let controls: OrbitControls;
 const cameraFov = 75;
 const cameraNear = 0.1;
 const cameraFar = 100;
-const cameraPosition: [number, number, number] = [0, 0, 1.5];
+const cameraPosition: [number, number, number] = [0, 1, 1];
 
 const SIZES = {
   width: window.innerWidth,
@@ -75,7 +74,6 @@ function onWindowResize() {
 function setControls() {
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
-  // controls.target.set(0, 0.75, 0);
   return controls;
 }
 
@@ -95,43 +93,54 @@ function createLights() {
   return { ambientLight, directionalLight };
 }
 
-function createFloor() {
-  const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(10, 10),
-    new THREE.MeshStandardMaterial({
-      color: "#444444",
-      metalness: 0,
-      roughness: 0.5,
-    })
-  );
+let waterMaterial: THREE.ShaderMaterial;
+const debugObject = {
+  depthColor: 0x186691,
+  surfaceColor: 0x9bd8ff,
+};
+
+function createWater() {
+  waterMaterial = new THREE.ShaderMaterial({
+    vertexShader,
+    fragmentShader,
+    uniforms: {
+      uBigWavesElevation: { value: 0.2 },
+      uBigWavesFrequency: { value: new THREE.Vector2(4, 1.5) },
+      uTime: { value: 0 },
+      uBigWavesSpeed: { value: 0.75 },
+
+      uDepthColor: { value: new THREE.Color(debugObject.depthColor) },
+      uSurfaceColor: { value: new THREE.Color(debugObject.surfaceColor) },
+      uColorOffset: { value: 0.08 },
+      uColorMultiplier: { value: 5 },
+    },
+  });
+
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(2, 2, 512, 512), waterMaterial);
+
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;
 
+  gui.add(floor.material.uniforms.uBigWavesElevation, "value", 0, 1, 0.001).name("uBigWavesElevation");
+  gui.add(floor.material.uniforms.uBigWavesFrequency.value, "x", 0, 10, 0.001).name("uBigWavesFrequencyX");
+  gui.add(floor.material.uniforms.uBigWavesFrequency.value, "y", 0, 10, 0.001).name("uBigWavesFrequencyY");
+  gui.add(floor.material.uniforms.uBigWavesSpeed, "value", 0, 4, 0.001).name("uBigWavesSpeed");
+  gui
+    .addColor(debugObject, "depthColor")
+    .name("depthColor")
+    .onChange(() => {
+      waterMaterial.uniforms.uDepthColor.value.set(debugObject.depthColor);
+    });
+  gui
+    .addColor(debugObject, "surfaceColor")
+    .name("surfaceColor")
+    .onChange(() => {
+      waterMaterial.uniforms.uSurfaceColor.value.set(debugObject.surfaceColor);
+    });
+  gui.add(floor.material.uniforms.uColorOffset, "value", 0, 1, 0.001).name("uColorOffset");
+  gui.add(floor.material.uniforms.uColorMultiplier, "value", 0, 10, 0.001).name("uColorMultiplier");
+
   return floor;
-}
-
-let material: THREE.ShaderMaterial;
-function createPlane() {
-  // Geometry
-  const geometry = new THREE.PlaneGeometry(1, 1, 32, 32);
-
-  // Material
-  const flagTexture = textureLoader.load("/textures/wood_cabinet_worn_long/wood_cabinet_worn_long_diff_1k.jpg");
-
-  material = new THREE.ShaderMaterial({
-    vertexShader: vertexShaderSource,
-    fragmentShader: fragmentShaderSource,
-    uniforms: {
-      uTime: { value: 0 },
-    },
-    side: THREE.DoubleSide,
-  });
-
-  // GUI
-
-  // Mesh
-  const mesh = new THREE.Mesh(geometry, material);
-  return mesh;
 }
 
 function init() {
@@ -145,8 +154,8 @@ function init() {
   const { ambientLight, directionalLight } = createLights();
   scene.add(ambientLight, directionalLight);
 
-  const mesh = createPlane();
-  scene.add(mesh);
+  const floor = createWater();
+  scene.add(floor);
 
   window.addEventListener("resize", onWindowResize);
 
@@ -164,10 +173,11 @@ function tick() {
   timer.update();
   const elapsedTime = timer.getElapsed();
 
-  material.uniforms.uTime.value = elapsedTime;
-
   // Update Controls
   controls.update();
+
+  // Update utime
+  waterMaterial.uniforms.uTime.value = elapsedTime;
 
   // Render
   renderer.render(scene, camera);

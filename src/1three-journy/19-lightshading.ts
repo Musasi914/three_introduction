@@ -1,9 +1,9 @@
 import GUI from "lil-gui";
 import * as THREE from "three";
-import { AnaglyphEffect, OrbitControls, Timer } from "three/examples/jsm/Addons.js";
+import { OrbitControls, Timer } from "three/examples/jsm/Addons.js";
 // import * as CANNON from "cannon-es";
-import vertexShaderSource from "/shader/threejs-journy/Patterns/vertexShader.glsl?raw";
-import fragmentShaderSource from "/shader/threejs-journy/Patterns/fragmentShader.glsl?raw";
+import vertexShader from "/shader/threejs-journy/light/vertexShader.glsl?raw";
+import fragmentShader from "/shader/threejs-journy/light/fragmentShader.glsl?raw";
 
 let scene: THREE.Scene;
 let camera: THREE.PerspectiveCamera;
@@ -13,7 +13,7 @@ let controls: OrbitControls;
 const cameraFov = 75;
 const cameraNear = 0.1;
 const cameraFar = 100;
-const cameraPosition: [number, number, number] = [0, 0, 1.5];
+const cameraPosition: [number, number, number] = [0, 2, 5];
 
 const SIZES = {
   width: window.innerWidth,
@@ -75,7 +75,7 @@ function onWindowResize() {
 function setControls() {
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
-  // controls.target.set(0, 0.75, 0);
+  controls.target.set(0, 0.75, 0);
   return controls;
 }
 
@@ -110,28 +110,55 @@ function createFloor() {
   return floor;
 }
 
-let material: THREE.ShaderMaterial;
-function createPlane() {
-  // Geometry
-  const geometry = new THREE.PlaneGeometry(1, 1, 32, 32);
+const materialParameters = {
+  color: "#ffffff",
+};
 
-  // Material
-  const flagTexture = textureLoader.load("/textures/wood_cabinet_worn_long/wood_cabinet_worn_long_diff_1k.jpg");
+let sphere: THREE.Mesh;
+let torus: THREE.Mesh;
+let torusKnot: THREE.Mesh;
 
-  material = new THREE.ShaderMaterial({
-    vertexShader: vertexShaderSource,
-    fragmentShader: fragmentShaderSource,
+function createObjects() {
+  const material = new THREE.ShaderMaterial({
+    vertexShader: vertexShader,
+    fragmentShader: fragmentShader,
     uniforms: {
-      uTime: { value: 0 },
+      uColor: new THREE.Uniform(new THREE.Color(materialParameters.color)),
     },
-    side: THREE.DoubleSide,
   });
 
-  // GUI
+  sphere = new THREE.Mesh(new THREE.SphereGeometry(1), material);
+  scene.add(sphere);
+  sphere.position.set(3, 0, 0);
 
-  // Mesh
-  const mesh = new THREE.Mesh(geometry, material);
-  return mesh;
+  torus = new THREE.Mesh(new THREE.TorusGeometry(1, 0.4, 16, 64), material);
+  scene.add(torus);
+  torus.position.set(-3, 0, 0);
+
+  torusKnot = new THREE.Mesh(new THREE.TorusKnotGeometry(0.8, 0.3, 100, 16), material);
+  scene.add(torusKnot);
+  torusKnot.position.set(0, 0, 0);
+}
+
+function createLightHelper() {
+  const lightHelper = new THREE.Mesh(
+    new THREE.PlaneGeometry(),
+    new THREE.MeshBasicMaterial({
+      color: "#ff0000",
+      side: THREE.DoubleSide,
+    })
+  );
+  lightHelper.position.set(0, 0, 3);
+  scene.add(lightHelper);
+
+  const pointLightHelper = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(0.1, 2),
+    new THREE.MeshBasicMaterial({
+      color: new THREE.Color(1, 0.1, 0.1),
+    })
+  );
+  pointLightHelper.position.set(0, 2.5, 0);
+  scene.add(pointLightHelper);
 }
 
 function init() {
@@ -142,11 +169,8 @@ function init() {
   const controls = setControls();
   controls.update();
 
-  const { ambientLight, directionalLight } = createLights();
-  scene.add(ambientLight, directionalLight);
-
-  const mesh = createPlane();
-  scene.add(mesh);
+  createObjects();
+  createLightHelper();
 
   window.addEventListener("resize", onWindowResize);
 
@@ -164,10 +188,15 @@ function tick() {
   timer.update();
   const elapsedTime = timer.getElapsed();
 
-  material.uniforms.uTime.value = elapsedTime;
-
   // Update Controls
   controls.update();
+
+  sphere.rotation.y = elapsedTime;
+  sphere.rotation.x = elapsedTime;
+  torus.rotation.y = elapsedTime;
+  torus.rotation.x = elapsedTime;
+  torusKnot.rotation.y = elapsedTime;
+  torusKnot.rotation.x = elapsedTime;
 
   // Render
   renderer.render(scene, camera);
