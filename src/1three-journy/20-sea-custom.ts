@@ -91,7 +91,10 @@ function createWater() {
     },
   });
 
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(2, 2, 512, 512), waterMaterial);
+  const geometry = new THREE.PlaneGeometry(2, 2, 512, 512);
+  geometry.deleteAttribute("normal");
+  geometry.deleteAttribute("uv");
+  const floor = new THREE.Mesh(geometry, waterMaterial);
 
   floor.rotation.x = -Math.PI / 2;
 
